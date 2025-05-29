@@ -1,0 +1,33 @@
+body {
+    margin: 0;
+    padding: 0;
+    background: #222;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+#area-jogo {
+    background: #333;
+    border: 3px solid #4caf50;
+    border-radius: 12px;
+    display: block;
+    margin: auto;
+    box-shadow: 0 0 24px #000a;
+}
+
+#pontuacao {
+    color: #fff;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 1.3rem;
+    position: absolute;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #222c;
+    padding: 8px 24px;
+    border-radius: 8px;
+    border: 1px solid #4caf50;
+    z-index: 2;
+}
