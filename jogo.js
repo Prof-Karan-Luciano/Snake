@@ -22,6 +22,7 @@ let direcao = { x: 1, y: 0 }; // Começa indo para a direita
 let proximaDirecao = { x: 1, y: 0 };
 let fruta = gerarFruta();
 let pontuacao = 0;
+let jogoAtivo = true;
 
 function desenhar() {
     const contexto = areaJogo.getContext('2d');
@@ -42,37 +43,62 @@ function desenhar() {
     }
 }
 
+function mostrarMensagemPerdeu() {
+    let mensagem = document.getElementById('mensagem-perdeu');
+    if (!mensagem) {
+        mensagem = document.createElement('div');
+        mensagem.id = 'mensagem-perdeu';
+        mensagem.innerHTML = `
+            <div style="background:#222d; color:#fff; border:2px solid #e53935; border-radius:12px; padding:32px 48px; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:10; text-align:center; font-size:1.5rem;">
+                <strong>Você perdeu!</strong><br><br>
+                <button id="botao-reiniciar" style="margin-top:16px; padding:10px 32px; font-size:1.1rem; background:#4caf50; color:#fff; border:none; border-radius:8px; cursor:pointer;">Jogar novamente</button>
+            </div>
+        `;
+        document.body.appendChild(mensagem);
+        document.getElementById('botao-reiniciar').onclick = function() {
+            mensagem.remove();
+            reiniciarJogo();
+            jogoAtivo = true;
+        };
+    }
+}
+
 function atualizar() {
+    if (!jogoAtivo) return;
     direcao.x = proximaDirecao.x;
     direcao.y = proximaDirecao.y;
 
     const cabeca = minhoca[0];
-    const novaCabeca = {
-        x: cabeca.x + direcao.x * velocidade,
-        y: cabeca.y + direcao.y * velocidade
-    };
-    minhoca.unshift(novaCabeca);
-
-    // Mantém o comprimento da minhoca proporcional à pontuação
-    while (minhoca.length > pontuacao * RECOMPENSA_CRESCIMENTO + 1) {
-        minhoca.pop();
+    // Interpolar segmentos para suavizar o movimento em alta velocidade
+    let passos = Math.max(1, Math.floor(velocidade / (TAMANHO_SEGMENTO_INICIAL / 2)));
+    let incrementoX = (direcao.x * velocidade) / passos;
+    let incrementoY = (direcao.y * velocidade) / passos;
+    for (let i = 0; i < passos; i++) {
+        const novaCabeca = {
+            x: minhoca[0].x + incrementoX,
+            y: minhoca[0].y + incrementoY
+        };
+        minhoca.unshift(novaCabeca);
+        // Mantém o comprimento da minhoca proporcional à pontuação
+        while (minhoca.length > pontuacao * RECOMPENSA_CRESCIMENTO + 1) {
+            minhoca.pop();
+        }
+        // Verifica se comeu a fruta
+        if (Math.hypot(novaCabeca.x - fruta.x, novaCabeca.y - fruta.y) < RAIO_COLISAO_FRUTA) {
+            pontuacao++;
+            fruta = gerarFruta();
+            velocidade += 1.0;
+        }
+        // Limitar minhoca dentro da área
+        if (
+            novaCabeca.x < TAMANHO_SEGMENTO_INICIAL/2 || novaCabeca.x > largura - TAMANHO_SEGMENTO_INICIAL/2 ||
+            novaCabeca.y < TAMANHO_SEGMENTO_INICIAL/2 || novaCabeca.y > altura - TAMANHO_SEGMENTO_INICIAL/2
+        ) {
+            jogoAtivo = false;
+            mostrarMensagemPerdeu();
+            return;
+        }
     }
-
-    // Verifica se comeu a fruta
-    if (Math.hypot(novaCabeca.x - fruta.x, novaCabeca.y - fruta.y) < RAIO_COLISAO_FRUTA) {
-        pontuacao++;
-        fruta = gerarFruta();
-        // Não aumenta o tamanho do segmento, só o comprimento
-    }
-
-    // Limitar minhoca dentro da área
-    if (
-        novaCabeca.x < TAMANHO_SEGMENTO_INICIAL/2 || novaCabeca.x > largura - TAMANHO_SEGMENTO_INICIAL/2 ||
-        novaCabeca.y < TAMANHO_SEGMENTO_INICIAL/2 || novaCabeca.y > altura - TAMANHO_SEGMENTO_INICIAL/2
-    ) {
-        reiniciarJogo();
-    }
-
     pontuacaoElemento.textContent = `Pontuação: ${pontuacao}`;
 }
 
@@ -90,6 +116,9 @@ function reiniciarJogo() {
     direcao = { x: 0, y: 0 };
     velocidade = VELOCIDADE_INICIAL;
     tamanhoSegmento = TAMANHO_SEGMENTO_INICIAL;
+    jogoAtivo = true;
+    let mensagem = document.getElementById('mensagem-perdeu');
+    if (mensagem) mensagem.remove();
 }
 
 window.addEventListener('keydown', function(evento) {
